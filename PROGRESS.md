@@ -1,17 +1,20 @@
 ## Current
-Task: T-04 Drizzle schema + migrations for §4.1-4.5 | Phase: 0
-Next action: Write migration test asserting every table/enum/index/CHECK exists (incl. quote_verified=false rejection), then implement Drizzle schema + SQL migrations.
+Task: T-05 RLS policies + get_shared_search function (§4.6) | Phase: 0
+Next action: Write test asserting anon cannot read venue directly, can read via valid share token, cannot with invalid token. Then implement RLS policies + SECURITY DEFINER function migration.
 
 ## Completed
 T-01 ✓ Monorepo scaffold: pnpm workspace (pnpm-workspace.yaml), Turborepo (turbo.json), TS strict base (tsconfig.base.json), Prettier (.prettierrc.json). 6 packages: packages/{domain,db,providers,pipeline,evals}, apps/web. Each has package.json + tsconfig.json + vitest.config.ts + a smoke test. `pnpm test` green across all packages.
 T-02 ✓ Purity enforcement: eslint.config.js (flat config, typescript-eslint + eslint-plugin-boundaries). Rules: no-restricted-globals blocks `fetch`, no-restricted-syntax blocks `new Date()`/`Date.now()`/`Math.random()`, no-restricted-imports blocks fs/http/https in packages/domain/**, boundaries/element-types blocks domain importing db/providers/pipeline/evals/web. Test: packages/domain/src/purity.lint.test.ts (spawns eslint against temp snippets, 6 cases, all green).
 T-03 ✓ Postgres+PostGIS local dev: used `supabase init && supabase start` (Docker-based, §3.1 alternative) since psql/postgres are not natively installed on this machine. Script: scripts/db-setup.sh (idempotent, verified by running twice). DB at postgresql://postgres:postgres@127.0.0.1:54322/postgres, diner_test created with postgis/pg_trgm/uuid-ossp extensions. Test: packages/db/src/postgis.integration.test.ts (3 tests, green) — asserts PostGIS >=3.3, required extensions present, ST_Distance(Times Sq, Rockefeller Center) in a sane range.
+T-04 ✓ Drizzle schema + migrations: packages/db/migrations/0001_init.sql (raw SQL, all §4.1-4.5 enums/tables/indexes/CHECKs verbatim from spec) + packages/db/src/schema.ts (Drizzle typed schema mirroring it, PostGIS geography/geometry columns via drizzle-orm customType since drizzle-kit doesn't model them natively) + packages/db/src/migrate.ts (simple idempotent migration runner, tracks applied files in a `_migrations` table — chose this over drizzle-kit's own migrator because raw PostGIS DDL like `USING GIST`/`gin_trgm_ops` isn't expressible through drizzle-kit's generate flow). Test: packages/db/src/schema.integration.test.ts (9 tests) — every enum/table/index exists, migrations are idempotent (rerun no-ops), quote_verified=false insert rejected, max_capacity<=0 rejected, is_derived without derived_from rejected, headcount out of [2,5000] rejected.
 
 ## Decisions
 - DINER.md and SPECS.md live in .claude/ not repo root (HANDOFF said root, but they were placed in .claude/ by the setup). Treating .claude/DINER.md and .claude/SPECS.md as canonical source docs; not moving them.
 - Docker daemon was not running at session start; started Docker Desktop successfully.
 - Local dev stack is Postgres 17.6 / PostGIS 3.3.7 (Supabase CLI's fixed local Docker image), not Postgres 16 / PostGIS 3.4+ as SPECS.md §1 originally pinned. Amended SPECS.md §1 and the T-03 row in §14 with a one-line rationale: no version-specific features are used (only geography, GIST, ST_Contains/ST_Distance, all present since PostGIS 2.x), so this is safe. Production still targets Supabase-hosted Postgres 16 per §3.3 (Supabase's hosted projects use whatever PG version Supabase provisions — will verify at T-90).
 - packages/db vitest.config.ts defaults DATABASE_URL to the local diner_test connection string so integration tests run without manual env export.
+- packages/db vitest.config.ts sets fileParallelism:false — integration tests share one physical diner_test database and a schema-reset in one file races live queries in another under default parallel file execution. Discovered via a flaky ST_Distance test failing only when run alongside schema.integration.test.ts.
+- Migrations run via a hand-rolled runner (packages/db/src/migrate.ts) rather than drizzle-kit's push/migrate, because migration 0001 needs raw PostGIS-specific DDL (GIST index, gin_trgm_ops) that drizzle-kit's schema-diff generator doesn't produce. drizzle-kit is still configured (drizzle.config.ts) and the schema.ts is the typed source of truth for queries; migrations/*.sql is the DDL source of truth and the two are kept in sync by hand per migration.
 
 ## Blocked
 (none)
