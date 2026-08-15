@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Generic build output
+build/
+dist/
+
+# Turborepo
+.turbo/
+
+# Test coverage & reports
+coverage/
+playwright-report/
+test-results/
+
+# Vercel
+.vercel/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# TypeScript
+*.tsbuildinfo
+
+# Supabase local artifacts
+supabase/.branches
+supabase/.temp
+
+# Claude Code
+.claude/
+CLAUDE.local.md
