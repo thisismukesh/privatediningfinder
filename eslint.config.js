@@ -8,6 +8,15 @@ export default tseslint.config(
   tseslint.configs.recommended,
   {
     files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
     plugins: { boundaries },
     settings: {
       'boundaries/elements': [
